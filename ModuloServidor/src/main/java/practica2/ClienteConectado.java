@@ -72,8 +72,9 @@ public class ClienteConectado implements Runnable {
         File carpeta = new File(RUTA_ARCHIVOS);
         File[] archivos = carpeta.listFiles();
         if (archivos != null && archivos.length > 0) {
-            for (File archivo : archivos) {
-                salida.println( archivo.getName());
+            salida.println("\nArchivos disponibles:");
+            for (int i = 0; i < archivos.length; i++) {
+                salida.println((i + 1) + ". " + archivos[i].getName());
             }
         } else {
             salida.println("No se encontraron archivos.");
@@ -81,7 +82,7 @@ public class ClienteConectado implements Runnable {
     }
 
     private void leerArchivo() throws IOException {
-        salida.println("Ingrese el nombre del archivo:");
+        salida.println("Ingrese el nombre del archivo (debe terminar en .txt):");
         String nombreArchivo = entrada.readLine();
         if (nombreArchivo == null) {
             salida.println("No se recibió nombre de archivo.");
@@ -93,7 +94,8 @@ public class ClienteConectado implements Runnable {
             return;
         }
         try {
-            semaforo.acquire(); // Acceso exclusivo
+            semaforo.acquire();
+            salida.println("\n" + nombreArchivo + ":");
             BufferedReader lector = new BufferedReader(new FileReader(archivo));
             String linea;
             while ((linea = lector.readLine()) != null) {
@@ -123,9 +125,18 @@ public class ClienteConectado implements Runnable {
             semaforo.acquire();
             BufferedReader lector = new BufferedReader(new FileReader(archivo));
             String linea;
+            boolean imprimir = false;
             while ((linea = lector.readLine()) != null) {
-                if (linea.startsWith(personaje)) {
-                    salida.println(linea);
+                if (linea.equals(personaje)) {
+                    imprimir = true;
+                    continue;
+                }
+                if (imprimir) {
+                    if (linea.matches("^[A-Za-z ]+$")) { // Si la línea es otro nombre de personaje
+                        imprimir = false;
+                    } else {
+                        salida.println(linea);
+                    }
                 }
             }
             lector.close();
@@ -156,7 +167,7 @@ public class ClienteConectado implements Runnable {
             boolean existePersonaje = false;
             String linea;
             while ((linea = lector.readLine()) != null) {
-                if (linea.startsWith(personaje)) {
+                if (linea.equals(personaje)) {
                     existePersonaje = true;
                     break;
                 }
@@ -165,7 +176,8 @@ public class ClienteConectado implements Runnable {
 
             if (existePersonaje) {
                 PrintWriter escritor = new PrintWriter(new FileWriter(archivo, true));
-                escritor.println(personaje + ": " + frase);
+                escritor.println(personaje);
+                escritor.println(frase);
                 escritor.close();
                 salida.println("Frase añadida correctamente.");
             } else {
