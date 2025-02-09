@@ -24,17 +24,14 @@ public class ClienteConectado implements Runnable {
 
             String opcion;
             while (true) {
-                // Enviar el menú
                 salida.println("\nBienvenido al servidor. Elija una opción:");
                 salida.println("1. Listar archivos");
                 salida.println("2. Leer archivo");
                 salida.println("3. Buscar por personaje");
                 salida.println("4. Añadir frase");
                 salida.println("5. Salir");
-                // Marcador para indicar fin de menú
-                salida.println("<FIN_MENU>");
+                salida.println("<FIN_MENU>"); // uso marcadores para que sean detectados en los bucles de lectura
 
-                // Leer la opción del cliente
                 opcion = entrada.readLine();
                 if (opcion == null) break;
                 opcion = opcion.trim();
@@ -59,7 +56,6 @@ public class ClienteConectado implements Runnable {
                         salida.println("Opción no válida.");
                         break;
                 }
-                // Indicar el fin de la respuesta de la operación actual
                 salida.println("<FIN_RESPUESTA>");
             }
             socket.close();
@@ -72,7 +68,7 @@ public class ClienteConectado implements Runnable {
         File carpeta = new File(RUTA_ARCHIVOS);
         File[] archivos = carpeta.listFiles();
         if (archivos != null && archivos.length > 0) {
-            salida.println("\nArchivos disponibles:");
+            salida.println("Archivos disponibles:");
             for (int i = 0; i < archivos.length; i++) {
                 salida.println((i + 1) + ". " + archivos[i].getName());
             }
@@ -82,33 +78,56 @@ public class ClienteConectado implements Runnable {
     }
 
     private void leerArchivo() throws IOException {
-        salida.println("Ingrese el nombre del archivo (debe terminar en .txt):");
-        String nombreArchivo = entrada.readLine();
-        if (nombreArchivo == null) {
-            salida.println("No se recibió nombre de archivo.");
-            return;
-        }
-        File archivo = new File(RUTA_ARCHIVOS + nombreArchivo);
-        if (!archivo.exists()) {
-            salida.println("El archivo no existe.");
-            return;
-        }
-        try {
-            semaforo.acquire();
-            salida.println("\n" + nombreArchivo + ":");
-            BufferedReader lector = new BufferedReader(new FileReader(archivo));
-            String linea;
-            while ((linea = lector.readLine()) != null) {
-                salida.println(linea);
-            }
-            lector.close();
-            Thread.sleep(3000); // Retardo artificial
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            semaforo.release();
-        }
-    }
+       File carpeta = new File(RUTA_ARCHIVOS);
+       File[] archivos = carpeta.listFiles();
+       if (archivos == null || archivos.length == 0) {
+           salida.println("No se encontraron archivos.");
+           return;
+       }
+
+       salida.println("\nArchivos disponibles:");
+       for (int i = 0; i < archivos.length; i++) {
+           salida.println((i + 1) + ". " + archivos[i].getName());
+       }
+
+       salida.println("<FIN_LISTA_ARCHIVOS>");
+       String opcionArchivo = entrada.readLine();
+       if (opcionArchivo == null) {
+           salida.println("No se recibió una opción de archivo.");
+           return;
+       }
+
+       int indiceArchivo;
+       try {
+           indiceArchivo = Integer.parseInt(opcionArchivo) - 1;
+       } catch (NumberFormatException e) {
+           salida.println("Opción no válida.");
+           return;
+       }
+
+       if (indiceArchivo < 0 || indiceArchivo >= archivos.length) {
+           salida.println("Opción fuera de rango.");
+           return;
+       }
+
+       File archivo = archivos[indiceArchivo];
+       try {
+           semaforo.acquire();
+           salida.println("\n" + archivo.getName() + ":");
+           BufferedReader lector = new BufferedReader(new FileReader(archivo));
+           String linea;
+           while ((linea = lector.readLine()) != null) {
+               salida.println(linea);
+           }
+           lector.close();
+           salida.println("Fin del archivo. Espere por favor...");
+           Thread.sleep(3000); // Retardo artificial
+       } catch (InterruptedException e) {
+           e.printStackTrace();
+       } finally {
+           semaforo.release();
+       }
+   }
 
     private void buscarFrases() throws IOException {
         salida.println("Ingrese el nombre del archivo:");
@@ -132,7 +151,7 @@ public class ClienteConectado implements Runnable {
                     continue;
                 }
                 if (imprimir) {
-                    if (linea.matches("^[A-Za-z ]+$")) { // Si la línea es otro nombre de personaje
+                    if (linea.matches("^[A-Za-z ]+$")) {
                         imprimir = false;
                     } else {
                         salida.println(linea);
@@ -179,7 +198,7 @@ public class ClienteConectado implements Runnable {
                 escritor.println(personaje);
                 escritor.println(frase);
                 escritor.close();
-                salida.println("Frase añadida correctamente.");
+                salida.println("Frase añadida correctamente. Espere por favor...");
             } else {
                 salida.println("El personaje no existe en el archivo.");
             }
